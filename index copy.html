@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Vision Academy — Learn AI Object Detection with YOLO</title>
+<meta name="description" content="An interactive educational platform teaching Artificial Intelligence, Machine Learning, Deep Learning, Computer Vision and YOLO Object Detection.">
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- AOS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.1/aos.css">
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: '#0F172A',
+          primary: '#3B82F6',
+          secondary: '#8B5CF6',
+          accent: '#06B6D4',
+          success: '#10B981',
+          warning: '#F59E0B',
+          danger: '#EF4444',
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['Inter', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root{
+    --bg:#0F172A; --bg-2:#0B1222; --primary:#3B82F6; --secondary:#8B5CF6;
+    --accent:#06B6D4; --success:#10B981; --warning:#F59E0B; --danger:#EF4444;
+    --glass-border: rgba(148,163,184,0.16);
+  }
+  *{scroll-behavior:smooth;}
+  html,body{background:var(--bg); color:#E2E8F0; font-family:'Inter',sans-serif; overflow-x:hidden;}
+  h1,h2,h3,h4,.font-display{font-family:'Space Grotesk',sans-serif;}
+  .font-mono{font-family:'JetBrains Mono',monospace;}
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  /* background grid + glow */
+  .bg-grid{
+    background-image:
+      linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+  .glow-orb{
+    position:absolute; border-radius:9999px; filter:blur(90px); opacity:0.35; pointer-events:none;
+  }
+
+  /* glass */
+  .glass{
+    background: linear-gradient(160deg, rgba(30,41,59,0.55), rgba(15,23,42,0.35));
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .glass-card{ border-radius:18px; }
+  .glass-card:hover{ box-shadow: 0 0 0 1px rgba(59,130,246,0.35), 0 20px 40px -20px rgba(59,130,246,0.35); }
+
+  /* corner bracket motif — echoes bounding-box detection frames */
+  .frame-corners{ position:relative; }
+  .frame-corners::before,
+  .frame-corners::after,
+  .frame-corners .fc-tr,
+  .frame-corners .fc-br{
+    content:''; position:absolute; width:16px; height:16px; border-color:var(--accent); opacity:0; transition:opacity .35s ease, transform .35s ease;
+  }
+  .frame-corners::before{ top:8px; left:8px; border-top:2px solid; border-left:2px solid; }
+  .frame-corners::after{ bottom:8px; right:8px; border-bottom:2px solid; border-right:2px solid; }
+  .frame-corners .fc-tr{ top:8px; right:8px; border-top:2px solid var(--accent); border-right:2px solid var(--accent); }
+  .frame-corners .fc-br{ bottom:8px; left:8px; border-bottom:2px solid var(--accent); border-left:2px solid var(--accent); }
+  .frame-corners:hover::before, .frame-corners:hover::after,
+  .frame-corners:hover .fc-tr, .frame-corners:hover .fc-br{ opacity:1; transform:scale(1); }
+
+  .grad-text{
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    background-size:200% auto; animation:gradShift 6s ease infinite;
+  }
+  @keyframes gradShift{ 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+
+  .btn-primary{
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    box-shadow: 0 8px 30px -8px rgba(59,130,246,0.6);
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 34px -6px rgba(139,92,246,0.55); }
+  .btn-outline{ border:1px solid rgba(148,163,184,0.35); transition:.25s ease; }
+  .btn-outline:hover{ border-color:var(--accent); box-shadow: inset 0 0 0 1px var(--accent), 0 0 24px -8px var(--accent); }
+
+  .nav-link{ position:relative; }
+  .nav-link::after{
+    content:''; position:absolute; left:0; bottom:-4px; width:0; height:2px;
+    background:linear-gradient(90deg,var(--primary),var(--accent)); transition:width .25s ease;
+  }
+  .nav-link:hover::after, .nav-link.active::after{ width:100%; }
+
+  ::-webkit-scrollbar{ width:10px; }
+  ::-webkit-scrollbar-track{ background:var(--bg-2); }
+  ::-webkit-scrollbar-thumb{ background:linear-gradient(var(--primary),var(--secondary)); border-radius:8px; }
+
+  .typing-cursor{ border-right:3px solid var(--accent); animation:blink 1s step-start infinite; }
+  @keyframes blink{ 50%{ border-color:transparent; } }
+
+  .float{ animation: floaty 6s ease-in-out infinite; }
+  .float-delay{ animation-delay: 1.4s; }
+  .float-delay2{ animation-delay: 2.8s; }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-14px);} }
+
+  .pill{ border-radius:9999px; }
+
+  /* bbox demo scene */
+  .bbox{ position:absolute; border:2px solid; border-radius:4px; }
+  .bbox-label{ position:absolute; top:-24px; left:-2px; font-size:11px; padding:2px 6px; border-radius:4px 4px 4px 0; font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+
+  .section-eyebrow{ letter-spacing:.18em; }
+
+  input[type=range].slider-accent{ accent-color: var(--accent); }
+
+  .quiz-option{ transition: all .2s ease; cursor:pointer; }
+  .quiz-option:hover{ border-color: var(--accent); }
+  .quiz-option.correct{ border-color: var(--success) !important; background: rgba(16,185,129,0.12); }
+  .quiz-option.wrong{ border-color: var(--danger) !important; background: rgba(239,68,68,0.12); }
+
+  .counter{ font-variant-numeric: tabular-nums; }
+
+  .flow-node{ position:relative; }
+  .flow-connector{ width:2px; background:linear-gradient(var(--primary),var(--accent)); margin:0 auto; }
+
+  #mobileMenu{ transition: max-height .35s ease; }
+</style>
+</head>
+
+<body class="bg-bg bg-grid">
+
+<!-- Neural network canvas background (fixed, behind everything) -->
+<canvas id="netCanvas" class="fixed inset-0 -z-10 opacity-40"></canvas>
+
+<!-- ============ NAV ============ -->
+<header id="siteNav" class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5" >
+  <div class="max-w-full mx-2 md:px-8 h-16 flex items-center justify-between" >
+    <a href="#home" class="flex items-center gap-2 font-display font-bold text-lg">
+      <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary grid place-items-center">
+        <i class="fa-solid fa-eye text-white text-sm"></i>
+      </span>
+      AI Vision <span class="grad-text">Academy</span>
+    </a>
+
+    <nav class="hidden lg:flex items-center gap-6 text-sm text-slate-300 font-medium">
+      <a class="nav-link active" href="#home">Home</a>
+      <a class="nav-link" href="#intro">Introduction</a>
+      <a class="nav-link" href="#basics">AI Basics</a>
+      <a class="nav-link" href="#ml">Machine Learning</a>
+      <a class="nav-link" href="#dl">Deep Learning</a>
+      <a class="nav-link" href="#cv">Computer Vision</a>
+      <a class="nav-link" href="#yolo">YOLO Detection</a>
+      <a class="nav-link" href="#demo">Live Demo</a>
+      <a class="nav-link" href="#quiz">Quiz</a>
+      <a class="nav-link" href="#resources">Resources</a>
+      <a class="nav-link" href="#about">About</a>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <a href="#demo" class="hidden md:inline-flex btn-primary text-white text-sm font-semibold px-4 py-2 rounded-lg">
+        Try Demo
+      </a>
+      <button id="menuBtn" class="lg:hidden w-10 h-10 grid place-items-center rounded-lg border border-white/10 text-slate-200">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobileMenu" class="lg:hidden max-h-0 overflow-hidden glass border-t border-white/5">
+    <nav class="flex flex-col px-5 py-3 text-sm text-slate-300">
+      <a class="py-2 border-b border-white/5" href="#home">Home</a>
+      <a class="py-2 border-b border-white/5" href="#intro">Introduction</a>
+      <a class="py-2 border-b border-white/5" href="#basics">AI Basics</a>
+      <a class="py-2 border-b border-white/5" href="#ml">Machine Learning</a>
+      <a class="py-2 border-b border-white/5" href="#dl">Deep Learning</a>
+      <a class="py-2 border-b border-white/5" href="#cv">Computer Vision</a>
+      <a class="py-2 border-b border-white/5" href="#yolo">YOLO Detection</a>
+      <a class="py-2 border-b border-white/5" href="#demo">Live Demo</a>
+      <a class="py-2 border-b border-white/5" href="#quiz">Quiz</a>
+      <a class="py-2 border-b border-white/5" href="#resources">Resources</a>
+      <a class="py-2" href="#about">About</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="home" class="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden">
+  <div class="glow-orb w-[36rem] h-[36rem] bg-primary top-[-10rem] left-[-10rem]"></div>
+  <div class="glow-orb w-[30rem] h-[30rem] bg-secondary bottom-[-8rem] right-[-6rem]"></div>
+
+  <div class="max-w-7xl mx-auto px-5 md:px-8 grid lg:grid-cols-2 gap-14 items-center relative z-10">
+    <div data-aos="fade-up">
+      <span class="inline-flex items-center gap-2 text-xs font-mono pill px-3 py-1 glass text-accent section-eyebrow">
+        <i class="fa-solid fa-microchip"></i> REAL-TIME OBJECT DETECTION
+      </span>
+      <h1 class="font-display font-bold text-4xl sm:text-5xl lg:text-6xl mt-6 leading-tight">
+        <span id="typingTarget" class="typing-cursor"></span>
+      </h1>
+      <p class="mt-6 text-slate-300 text-lg max-w-xl">
+        Understand how modern AI detects people, cars, animals, and hundreds of other objects in real time — from neurons to bounding boxes.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <a href="#intro" class="btn-primary text-white font-semibold px-6 py-3 rounded-xl">
+          <i class="fa-solid fa-graduation-cap mr-2"></i>Start Learning
+        </a>
+        <a href="#demo" class="btn-outline glass text-slate-100 font-semibold px-6 py-3 rounded-xl">
+          <i class="fa-solid fa-camera mr-2"></i>Try Demo
+        </a>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6 mt-12 max-w-md">
+        <div>
+          <div class="font-display font-bold text-3xl grad-text counter" data-target="99.5">0</div>
+          <div class="text-xs text-slate-400 mt-1">FPS Real-Time*</div>
+        </div>
+        <div>
+          <div class="font-display font-bold text-3xl grad-text counter" data-target="11">0</div>
+          <div class="text-xs text-slate-400 mt-1">YOLO Versions</div>
+        </div>
+        <div>
+          <div class="font-display font-bold text-3xl grad-text counter" data-target="80">0</div>
+          <div class="text-xs text-slate-400 mt-1">COCO Classes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Animated detection illustration -->
+    <div class="relative" data-aos="fade-left">
+      <div class="relative glass glass-card p-4 mx-auto max-w-md aspect-[4/3] overflow-hidden">
+        <svg viewBox="0 0 400 300" class="w-full h-full">
+          <defs>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#0f172a"/>
+            </linearGradient>
+          </defs>
+          <rect width="400" height="300" rx="12" fill="url(#skyGrad)"/>
+          <!-- road -->
+          <rect x="0" y="210" width="400" height="90" fill="#1f2937"/>
+          <rect x="0" y="252" width="400" height="6" fill="#334155" stroke-dasharray="14 10"/>
+          <!-- buildings -->
+          <rect x="20" y="80" width="40" height="130" fill="#334155"/>
+          <rect x="70" y="110" width="30" height="100" fill="#293548"/>
+          <rect x="310" y="60" width="46" height="150" fill="#334155"/>
+          <rect x="360" y="100" width="28" height="110" fill="#293548"/>
+          <!-- car -->
+          <g id="carShape">
+            <rect x="150" y="200" width="80" height="30" rx="8" fill="#3B82F6"/>
+            <rect x="165" y="182" width="45" height="22" rx="6" fill="#60a5fa"/>
+            <circle cx="168" cy="232" r="9" fill="#0f172a" stroke="#94a3b8" stroke-width="2"/>
+            <circle cx="212" cy="232" r="9" fill="#0f172a" stroke="#94a3b8" stroke-width="2"/>
+          </g>
+          <!-- person -->
+          <g id="personShape">
+            <circle cx="280" cy="178" r="9" fill="#8B5CF6"/>
+            <rect x="273" y="188" width="14" height="30" rx="5" fill="#8B5CF6"/>
+            <rect x="270" y="216" width="7" height="20" rx="3" fill="#8B5CF6"/>
+            <rect x="284" y="216" width="7" height="20" rx="3" fill="#8B5CF6"/>
+          </g>
+          <!-- dog -->
+          <g id="dogShape">
+            <ellipse cx="95" cy="222" rx="22" ry="10" fill="#06B6D4"/>
+            <circle cx="118" cy="216" r="8" fill="#06B6D4"/>
+          </g>
+
+          <!-- bounding boxes (animated draw) -->
+          <rect id="boxCar" x="145" y="178" width="92" height="58" fill="none" stroke="#3B82F6" stroke-width="2" rx="4" stroke-dasharray="300" stroke-dashoffset="300"/>
+          <rect id="boxPerson" x="264" y="165" width="34" height="72" fill="none" stroke="#8B5CF6" stroke-width="2" rx="4" stroke-dasharray="300" stroke-dashoffset="300"/>
+          <rect id="boxDog" x="70" y="205" width="60" height="30" fill="none" stroke="#06B6D4" stroke-width="2" rx="4" stroke-dasharray="300" stroke-dashoffset="300"/>
+        </svg>
+
+        <div class="absolute font-mono text-[10px] px-2 py-0.5 rounded bg-primary/90 text-white" style="left:37%; top:36%;" id="labelCar">Car 96%</div>
+        <div class="absolute font-mono text-[10px] px-2 py-0.5 rounded bg-secondary/90 text-white" style="left:66%; top:24%;" id="labelPerson">Person 98%</div>
+        <div class="absolute font-mono text-[10px] px-2 py-0.5 rounded bg-accent/90 text-white" style="left:16%; top:60%;" id="labelDog">Dog 94%</div>
+      </div>
+      <div class="absolute -bottom-6 -right-4 glass rounded-xl px-4 py-2 text-xs font-mono text-accent float">
+        <i class="fa-solid fa-bolt mr-1"></i> inference: 6.2ms
+      </div>
+    </div>
+  </div>
+
+  <a href="#intro" class="absolute bottom-6 left-1/2 -translate-x-1/2 text-slate-400 animate-bounce">
+    <i class="fa-solid fa-chevron-down"></i>
+  </a>
+</section>
+
+<!-- ============ INTRO / SECTION 1: WHAT IS AI ============ -->
+<section id="intro" class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div id="basics"></div>
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">FOUNDATIONS</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">What is Artificial Intelligence?</h2>
+      <p class="text-slate-400 mt-4">
+        Artificial Intelligence is the field of building systems that perform tasks which normally require human intelligence — perceiving, reasoning, learning, and deciding.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-14">
+      <div class="glass glass-card frame-corners p-6" data-aos="fade-up">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-clock-rotate-left text-2xl text-primary"></i>
+        <h3 class="font-display font-semibold text-xl mt-4">A Brief History</h3>
+        <ul class="mt-4 space-y-3 text-sm text-slate-300">
+          <li><span class="font-mono text-accent">1950</span> — Alan Turing proposes the Turing Test.</li>
+          <li><span class="font-mono text-accent">1956</span> — The term "Artificial Intelligence" is coined at Dartmouth.</li>
+          <li><span class="font-mono text-accent">1980s</span> — Expert systems rise, then an "AI winter" follows.</li>
+          <li><span class="font-mono text-accent">1997</span> — Deep Blue defeats world chess champion Garry Kasparov.</li>
+          <li><span class="font-mono text-accent">2012</span> — AlexNet ignites the deep learning boom.</li>
+          <li><span class="font-mono text-accent">2015</span> — YOLO reframes detection as one regression problem.</li>
+          <li><span class="font-mono text-accent">2020s</span> — Large models and real-time vision go mainstream.</li>
+        </ul>
+      </div>
+
+      <div class="glass glass-card frame-corners p-6" data-aos="fade-up" data-aos-delay="100">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-globe text-2xl text-secondary"></i>
+        <h3 class="font-display font-semibold text-xl mt-4">Real-World Applications</h3>
+        <div class="grid grid-cols-2 gap-3 mt-4 text-sm text-slate-300">
+          <div><i class="fa-solid fa-stethoscope text-accent mr-2"></i>Healthcare diagnostics</div>
+          <div><i class="fa-solid fa-car text-accent mr-2"></i>Autonomous vehicles</div>
+          <div><i class="fa-solid fa-comments text-accent mr-2"></i>Language assistants</div>
+          <div><i class="fa-solid fa-shield-halved text-accent mr-2"></i>Fraud detection</div>
+          <div><i class="fa-solid fa-store text-accent mr-2"></i>Retail analytics</div>
+          <div><i class="fa-solid fa-seedling text-accent mr-2"></i>Precision agriculture</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-6">
+      <div class="glass glass-card p-6 border-l-2 border-success" data-aos="fade-right">
+        <h4 class="font-display font-semibold text-lg text-success"><i class="fa-solid fa-circle-check mr-2"></i>Advantages</h4>
+        <ul class="mt-3 space-y-2 text-sm text-slate-300 list-disc list-inside">
+          <li>Automates repetitive and dangerous tasks</li>
+          <li>Processes vast data faster than humans</li>
+          <li>Available continuously, without fatigue</li>
+          <li>Uncovers patterns invisible to manual analysis</li>
+        </ul>
+      </div>
+      <div class="glass glass-card p-6 border-l-2 border-danger" data-aos="fade-left">
+        <h4 class="font-display font-semibold text-lg text-danger"><i class="fa-solid fa-circle-exclamation mr-2"></i>Disadvantages</h4>
+        <ul class="mt-3 space-y-2 text-sm text-slate-300 list-disc list-inside">
+          <li>Requires large, high-quality datasets</li>
+          <li>Can inherit bias present in training data</li>
+          <li>Model decisions can be hard to interpret</li>
+          <li>High compute and energy costs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 2: MACHINE LEARNING ============ -->
+<section id="ml" class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">LEARNING FROM DATA</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Machine Learning</h2>
+      <p class="text-slate-400 mt-4">Machine Learning gives computers the ability to improve at a task by learning from examples, instead of following hand-written rules.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mt-14">
+      <div class="glass glass-card frame-corners p-6 text-center" data-aos="fade-up">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-primary to-accent grid place-items-center mb-4">
+          <i class="fa-solid fa-tags text-white text-xl"></i>
+        </div>
+        <h3 class="font-display font-semibold text-lg">Supervised Learning</h3>
+        <p class="text-sm text-slate-400 mt-2">Learns from labeled examples — inputs paired with correct answers — to predict labels for new data.</p>
+        <div class="mt-3 text-xs font-mono text-primary">e.g. spam detection, YOLO training</div>
+      </div>
+      <div class="glass glass-card frame-corners p-6 text-center" data-aos="fade-up" data-aos-delay="100">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-secondary to-primary grid place-items-center mb-4">
+          <i class="fa-solid fa-shapes text-white text-xl"></i>
+        </div>
+        <h3 class="font-display font-semibold text-lg">Unsupervised Learning</h3>
+        <p class="text-sm text-slate-400 mt-2">Finds hidden structure in unlabeled data by grouping similar examples together.</p>
+        <div class="mt-3 text-xs font-mono text-secondary">e.g. customer segmentation</div>
+      </div>
+      <div class="glass glass-card frame-corners p-6 text-center" data-aos="fade-up" data-aos-delay="200">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <div class="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-accent to-secondary grid place-items-center mb-4">
+          <i class="fa-solid fa-gamepad text-white text-xl"></i>
+        </div>
+        <h3 class="font-display font-semibold text-lg">Reinforcement Learning</h3>
+        <p class="text-sm text-slate-400 mt-2">An agent learns by trial and error, receiving rewards or penalties for its actions.</p>
+        <div class="mt-3 text-xs font-mono text-accent">e.g. game-playing agents, robotics</div>
+      </div>
+    </div>
+
+    <!-- diagram -->
+    <div class="glass glass-card p-8 mt-10" data-aos="fade-up">
+      <svg viewBox="0 0 800 160" class="w-full h-auto">
+        <rect x="20" y="60" width="140" height="46" rx="10" fill="none" stroke="#3B82F6" stroke-width="2"/>
+        <text x="90" y="88" text-anchor="middle" fill="#cbd5e1" font-size="13" font-family="Inter">Raw Data</text>
+        <line x1="160" y1="83" x2="230" y2="83" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="230" y="20" width="160" height="46" rx="10" fill="none" stroke="#8B5CF6" stroke-width="2"/>
+        <text x="310" y="48" text-anchor="middle" fill="#cbd5e1" font-size="12" font-family="Inter">Model Training</text>
+        <line x1="390" y1="43" x2="460" y2="43" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="230" y="94" width="160" height="46" rx="10" fill="none" stroke="#06B6D4" stroke-width="2"/>
+        <text x="310" y="122" text-anchor="middle" fill="#cbd5e1" font-size="12" font-family="Inter">Pattern Discovery</text>
+        <line x1="390" y1="117" x2="460" y2="117" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="460" y="60" width="160" height="46" rx="10" fill="none" stroke="#10B981" stroke-width="2"/>
+        <text x="540" y="88" text-anchor="middle" fill="#cbd5e1" font-size="12" font-family="Inter">Trained Model</text>
+        <line x1="620" y1="83" x2="690" y2="83" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="690" y="60" width="90" height="46" rx="10" fill="none" stroke="#F59E0B" stroke-width="2"/>
+        <text x="735" y="88" text-anchor="middle" fill="#cbd5e1" font-size="12" font-family="Inter">Predictions</text>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 z" fill="#475569"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 3: DEEP LEARNING ============ -->
+<section id="dl" class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 grid lg:grid-cols-2 gap-14 items-center">
+    <div data-aos="fade-right">
+      <span class="text-xs font-mono text-accent section-eyebrow">NEURAL NETWORKS</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Deep Learning</h2>
+      <p class="text-slate-400 mt-4">Deep Learning uses layered neural networks to automatically learn features directly from raw data like pixels.</p>
+
+      <div class="space-y-4 mt-8">
+        <div class="glass rounded-xl p-4 frame-corners">
+          <span class="fc-tr"></span><span class="fc-br"></span>
+          <h4 class="font-semibold text-sm text-primary"><i class="fa-solid fa-diagram-project mr-2"></i>Neural Networks</h4>
+          <p class="text-sm text-slate-400 mt-1">Layers of connected nodes ("neurons") that transform input signals into predictions.</p>
+        </div>
+        <div class="glass rounded-xl p-4 frame-corners">
+          <span class="fc-tr"></span><span class="fc-br"></span>
+          <h4 class="font-semibold text-sm text-secondary"><i class="fa-solid fa-layer-group mr-2"></i>Hidden Layers</h4>
+          <p class="text-sm text-slate-400 mt-1">Intermediate layers between input and output that build increasingly abstract features.</p>
+        </div>
+        <div class="glass rounded-xl p-4 frame-corners">
+          <span class="fc-tr"></span><span class="fc-br"></span>
+          <h4 class="font-semibold text-sm text-accent"><i class="fa-solid fa-scale-unbalanced mr-2"></i>Weights &amp; Bias</h4>
+          <p class="text-sm text-slate-400 mt-1">Weights scale each input's importance; bias shifts the result — both are learned during training.</p>
+        </div>
+        <div class="glass rounded-xl p-4 frame-corners">
+          <span class="fc-tr"></span><span class="fc-br"></span>
+          <h4 class="font-semibold text-sm text-warning"><i class="fa-solid fa-wave-square mr-2"></i>Activation Functions</h4>
+          <p class="text-sm text-slate-400 mt-1">Non-linear functions (like ReLU) that let networks model complex relationships.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass glass-card p-4" data-aos="fade-left">
+      <canvas id="nnCanvas" class="w-full" height="360"></canvas>
+      <p class="text-center text-xs text-slate-500 mt-2 font-mono">interactive signal propagation</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 4: COMPUTER VISION ============ -->
+<section id="cv" class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">TEACHING MACHINES TO SEE</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Computer Vision</h2>
+      <p class="text-slate-400 mt-4">A family of tasks that let machines interpret images and video — YOLO focuses on one of them: object detection.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-5 mt-14">
+      <div class="glass glass-card frame-corners p-5" data-aos="zoom-in">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <svg viewBox="0 0 100 70" class="w-full h-16 mb-3"><rect width="100" height="70" rx="8" fill="#1e293b"/><circle cx="50" cy="35" r="18" fill="#3B82F6"/></svg>
+        <h4 class="font-semibold text-sm">Image Classification</h4>
+        <p class="text-xs text-slate-400 mt-1">"What is this image?" — one label for the whole image.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-5 ring-1 ring-accent/40" data-aos="zoom-in" data-aos-delay="80">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <svg viewBox="0 0 100 70" class="w-full h-16 mb-3"><rect width="100" height="70" rx="8" fill="#1e293b"/><circle cx="50" cy="35" r="16" fill="#8B5CF6"/><rect x="30" y="15" width="40" height="40" fill="none" stroke="#06B6D4" stroke-width="2" rx="4"/></svg>
+        <h4 class="font-semibold text-sm">Object Detection</h4>
+        <p class="text-xs text-slate-400 mt-1">Locates &amp; labels multiple objects with bounding boxes — YOLO's specialty.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-5" data-aos="zoom-in" data-aos-delay="160">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <svg viewBox="0 0 100 70" class="w-full h-16 mb-3"><rect width="100" height="70" rx="8" fill="#1e293b"/><path d="M30 50 Q50 10 70 50 Z" fill="#10B981" opacity="0.7"/></svg>
+        <h4 class="font-semibold text-sm">Image Segmentation</h4>
+        <p class="text-xs text-slate-400 mt-1">Classifies every pixel, tracing an object's exact outline.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-5" data-aos="zoom-in" data-aos-delay="240">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <svg viewBox="0 0 100 70" class="w-full h-16 mb-3"><rect width="100" height="70" rx="8" fill="#1e293b"/><circle cx="50" cy="20" r="7" fill="#F59E0B"/><line x1="50" y1="27" x2="50" y2="50" stroke="#F59E0B" stroke-width="3"/><line x1="50" y1="35" x2="35" y2="45" stroke="#F59E0B" stroke-width="3"/><line x1="50" y1="35" x2="65" y2="45" stroke="#F59E0B" stroke-width="3"/></svg>
+        <h4 class="font-semibold text-sm">Pose Estimation</h4>
+        <p class="text-xs text-slate-400 mt-1">Maps skeletal keypoints to understand body position and movement.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-5" data-aos="zoom-in" data-aos-delay="320">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <svg viewBox="0 0 100 70" class="w-full h-16 mb-3"><rect width="100" height="70" rx="8" fill="#1e293b"/><text x="50" y="42" text-anchor="middle" fill="#06B6D4" font-family="JetBrains Mono" font-size="16">A19</text></svg>
+        <h4 class="font-semibold text-sm">OCR</h4>
+        <p class="text-xs text-slate-400 mt-1">Reads and extracts text characters straight out of images.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 5: YOLO DETECTION ============ -->
+<section id="yolo" class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-3xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">THE CORE OF THIS COURSE</span>
+      <h2 class="font-display font-bold text-4xl md:text-5xl mt-3 grad-text">YOLO (You Only Look Once)</h2>
+      <p class="text-slate-400 mt-4 text-lg">YOLO looks at an image exactly once and predicts every object's location and class in a single pass — that's what makes it fast enough for real time.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6 mt-14">
+      <div class="glass glass-card frame-corners p-6" data-aos="fade-up">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-bolt text-2xl text-warning"></i>
+        <h3 class="font-display font-semibold text-lg mt-3">Why Is YOLO Fast?</h3>
+        <p class="text-sm text-slate-400 mt-2">Older detectors scanned an image in multiple stages — propose regions, then classify each one. YOLO treats detection as a <span class="text-slate-200 font-medium">single regression problem</span>, predicting all boxes and classes in one forward pass through the network.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-6" data-aos="fade-up" data-aos-delay="80">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-layer-group text-2xl text-primary"></i>
+        <h3 class="font-display font-semibold text-lg mt-3">One-Stage Detector</h3>
+        <p class="text-sm text-slate-400 mt-2">The image is divided into a grid; each grid cell directly predicts bounding boxes and class probabilities — no separate proposal stage needed.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-6" data-aos="fade-up" data-aos-delay="160">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-vector-square text-2xl text-secondary"></i>
+        <h3 class="font-display font-semibold text-lg mt-3">Bounding Box &amp; Confidence</h3>
+        <p class="text-sm text-slate-400 mt-2">Each box is defined by position and size, plus a confidence score describing how certain the model is that an object exists there.</p>
+      </div>
+      <div class="glass glass-card frame-corners p-6" data-aos="fade-up" data-aos-delay="240">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-filter text-2xl text-accent"></i>
+        <h3 class="font-display font-semibold text-lg mt-3">Class Prediction &amp; NMS</h3>
+        <p class="text-sm text-slate-400 mt-2">Each box also gets class probabilities. Non-Maximum Suppression then removes duplicate, overlapping boxes, keeping only the best one per object.</p>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="mt-20" data-aos="fade-up">
+      <h3 class="font-display font-semibold text-2xl text-center mb-10">The Complete Pipeline</h3>
+      <div class="flex flex-col items-center">
+        <div id="pipeline" class="flex flex-col items-center"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 6: YOLO ARCHITECTURE ============ -->
+<section class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">UNDER THE HOOD</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">YOLO Architecture</h2>
+      <p class="text-slate-400 mt-4">Every YOLO model is built from three cooperating parts.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 mt-14">
+      <div class="glass glass-card frame-corners p-6 relative overflow-hidden" data-aos="fade-up">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <div class="absolute inset-0 arch-pulse opacity-0" data-arch="0" style="background:radial-gradient(circle at 50% 0%, rgba(59,130,246,0.25), transparent 70%);"></div>
+        <div class="relative">
+          <span class="text-xs font-mono text-primary">01</span>
+          <h3 class="font-display font-semibold text-lg mt-2">Backbone</h3>
+          <p class="text-sm text-slate-400 mt-2">A convolutional network (like CSPDarknet) that extracts raw visual features — edges, textures, shapes — from the input image.</p>
+        </div>
+      </div>
+      <div class="glass glass-card frame-corners p-6 relative overflow-hidden" data-aos="fade-up" data-aos-delay="100">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <div class="absolute inset-0 arch-pulse opacity-0" data-arch="1" style="background:radial-gradient(circle at 50% 0%, rgba(139,92,246,0.25), transparent 70%);"></div>
+        <div class="relative">
+          <span class="text-xs font-mono text-secondary">02</span>
+          <h3 class="font-display font-semibold text-lg mt-2">Neck</h3>
+          <p class="text-sm text-slate-400 mt-2">Layers (like FPN/PANet) that merge features from different scales, so both small and large objects can be detected.</p>
+        </div>
+      </div>
+      <div class="glass glass-card frame-corners p-6 relative overflow-hidden" data-aos="fade-up" data-aos-delay="200">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <div class="absolute inset-0 arch-pulse opacity-0" data-arch="2" style="background:radial-gradient(circle at 50% 0%, rgba(6,182,212,0.25), transparent 70%);"></div>
+        <div class="relative">
+          <span class="text-xs font-mono text-accent">03</span>
+          <h3 class="font-display font-semibold text-lg mt-2">Head</h3>
+          <p class="text-sm text-slate-400 mt-2">The final layers that output bounding box coordinates, confidence scores, and class probabilities per grid cell.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass glass-card p-6 mt-8" data-aos="fade-up">
+      <svg viewBox="0 0 800 100" class="w-full h-auto">
+        <rect x="10" y="27" width="220" height="46" rx="10" fill="rgba(59,130,246,0.12)" stroke="#3B82F6" stroke-width="2"/>
+        <text x="120" y="55" text-anchor="middle" fill="#cbd5e1" font-size="13" font-family="Inter">Backbone</text>
+        <line x1="230" y1="50" x2="290" y2="50" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="290" y="27" width="220" height="46" rx="10" fill="rgba(139,92,246,0.12)" stroke="#8B5CF6" stroke-width="2"/>
+        <text x="400" y="55" text-anchor="middle" fill="#cbd5e1" font-size="13" font-family="Inter">Neck</text>
+        <line x1="510" y1="50" x2="570" y2="50" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+        <rect x="570" y="27" width="220" height="46" rx="10" fill="rgba(6,182,212,0.12)" stroke="#06B6D4" stroke-width="2"/>
+        <text x="680" y="55" text-anchor="middle" fill="#cbd5e1" font-size="13" font-family="Inter">Head → Detections</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 7: HOW YOLO DETECTS ============ -->
+<section class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">STEP BY STEP</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">How YOLO Detects Objects</h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 mt-14 max-w-4xl mx-auto">
+      <!-- steps injected -->
+      <div id="stepsList" class="contents"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 8: BOUNDING BOX ============ -->
+<section class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 grid lg:grid-cols-2 gap-14 items-center">
+    <div data-aos="fade-right">
+      <span class="text-xs font-mono text-accent section-eyebrow">LOCATING OBJECTS</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">The Bounding Box</h2>
+      <p class="text-slate-400 mt-4">Every detection is described by four numbers. Drag the handles to see how they shape the box.</p>
+      <div class="grid grid-cols-2 gap-4 mt-6 font-mono text-sm">
+        <div class="glass rounded-xl p-4"><span class="text-primary">x</span> — center x-coordinate</div>
+        <div class="glass rounded-xl p-4"><span class="text-secondary">y</span> — center y-coordinate</div>
+        <div class="glass rounded-xl p-4"><span class="text-accent">w</span> — box width</div>
+        <div class="glass rounded-xl p-4"><span class="text-warning">h</span> — box height</div>
+      </div>
+    </div>
+    <div class="glass glass-card p-6" data-aos="fade-left">
+      <div class="relative w-full aspect-square bg-bg-2/60 rounded-xl overflow-hidden" id="bboxStage">
+        <svg viewBox="0 0 300 300" class="absolute inset-0 w-full h-full">
+          <rect width="300" height="300" fill="#0b1222"/>
+          <circle cx="150" cy="150" r="60" fill="#1e293b"/>
+        </svg>
+        <div id="bboxRect" class="bbox" style="left:90px; top:90px; width:120px; height:120px; border-color:#06B6D4;">
+          <div class="bbox-label" style="background:#06B6D4; color:#0f172a;">object</div>
+          <div class="absolute -right-2 -bottom-2 w-4 h-4 rounded-full bg-accent cursor-nwse-resize" id="bboxHandle"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-4 gap-2 mt-4 text-center font-mono text-xs">
+        <div class="glass rounded-lg py-2"><span class="text-primary">x</span><br><span id="valX">150</span></div>
+        <div class="glass rounded-lg py-2"><span class="text-secondary">y</span><br><span id="valY">150</span></div>
+        <div class="glass rounded-lg py-2"><span class="text-accent">w</span><br><span id="valW">120</span></div>
+        <div class="glass rounded-lg py-2"><span class="text-warning">h</span><br><span id="valH">120</span></div>
+      </div>
+      <p class="text-center text-xs text-slate-500 mt-2">drag the bottom-right handle</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 9: CONFIDENCE SCORE ============ -->
+<section class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 grid lg:grid-cols-2 gap-14 items-center">
+    <div class="glass glass-card p-6 order-2 lg:order-1" data-aos="fade-right">
+      <div class="relative w-full aspect-video bg-bg-2/60 rounded-xl overflow-hidden" id="confStage">
+        <!-- boxes with varying confidence -->
+        <div class="bbox conf-box" data-conf="0.97" style="left:8%; top:15%; width:22%; height:60%; border-color:#10B981;">
+          <div class="bbox-label" style="background:#10B981;color:#0f172a;">person 97%</div>
+        </div>
+        <div class="bbox conf-box" data-conf="0.71" style="left:38%; top:35%; width:26%; height:38%; border-color:#F59E0B;">
+          <div class="bbox-label" style="background:#F59E0B;color:#0f172a;">dog 71%</div>
+        </div>
+        <div class="bbox conf-box" data-conf="0.42" style="left:70%; top:20%; width:22%; height:30%; border-color:#EF4444;">
+          <div class="bbox-label" style="background:#EF4444;color:#fff;">bird 42%</div>
+        </div>
+        <div class="bbox conf-box" data-conf="0.88" style="left:64%; top:55%; width:28%; height:35%; border-color:#3B82F6;">
+          <div class="bbox-label" style="background:#3B82F6;color:#fff;">car 88%</div>
+        </div>
+      </div>
+      <div class="mt-5">
+        <div class="flex justify-between text-xs font-mono text-slate-400 mb-2">
+          <span>Confidence Threshold</span><span id="threshVal">0.50</span>
+        </div>
+        <input id="threshSlider" type="range" min="0" max="1" step="0.01" value="0.5" class="w-full slider-accent">
+      </div>
+    </div>
+    <div class="order-1 lg:order-2" data-aos="fade-left">
+      <span class="text-xs font-mono text-accent section-eyebrow">HOW SURE IS THE MODEL?</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Confidence Score</h2>
+      <p class="text-slate-400 mt-4">Each predicted box carries a confidence score — a mix of objectness (is there anything here?) and class probability (what is it?).</p>
+      <ul class="mt-6 space-y-3 text-sm text-slate-300">
+        <li class="glass rounded-lg p-3"><span class="text-success font-semibold">Objectness</span> — likelihood a box actually contains an object.</li>
+        <li class="glass rounded-lg p-3"><span class="text-warning font-semibold">Probability</span> — likelihood of the predicted class being correct.</li>
+        <li class="glass rounded-lg p-3"><span class="text-danger font-semibold">Threshold</span> — boxes scoring below it are discarded. Try dragging the slider to filter the weaker detections on the left.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 10: YOLO VERSIONS ============ -->
+<section class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">EVOLUTION</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">YOLO Versions</h2>
+      <p class="text-slate-400 mt-4">Each generation pushed speed and accuracy further. Figures are representative, illustrating overall trends across releases.</p>
+    </div>
+
+    <div id="versionGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-14"></div>
+
+    <div class="glass glass-card p-6 mt-10" data-aos="fade-up">
+      <canvas id="versionChart" height="90"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 11: LIVE DEMO ============ -->
+<section id="demo" class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">SEE IT WORK</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Real-Time Demo</h2>
+      <p class="text-slate-400 mt-4">A preview of what a YOLO detection interface looks like — upload an image or open your camera to run inference.</p>
+    </div>
+
+    <div class="glass glass-card p-6 md:p-8 mt-12 max-w-4xl mx-auto" data-aos="zoom-in">
+      <div class="flex flex-wrap gap-4 justify-center">
+        <button id="btnUpload" class="btn-primary text-white font-semibold px-6 py-3 rounded-xl">
+          <i class="fa-solid fa-upload mr-2"></i>Upload Image
+        </button>
+        <button id="btnCamera" class="btn-outline glass font-semibold px-6 py-3 rounded-xl">
+          <i class="fa-solid fa-camera mr-2"></i>Open Camera
+        </button>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 mt-10">
+        <div>
+          <p class="text-xs font-mono text-slate-400 mb-2 text-center">ORIGINAL IMAGE</p>
+          <div class="relative aspect-video rounded-xl overflow-hidden border border-white/10 bg-bg-2/60">
+            <svg viewBox="0 0 400 225" class="w-full h-full">
+              <rect width="400" height="225" fill="#111827"/>
+              <rect x="0" y="160" width="400" height="65" fill="#1f2937"/>
+              <rect x="120" y="120" width="70" height="45" rx="6" fill="#334155"/>
+              <circle cx="260" cy="130" r="10" fill="#475569"/>
+              <rect x="250" y="140" width="20" height="35" rx="6" fill="#475569"/>
+              <ellipse cx="60" cy="165" rx="18" ry="9" fill="#374151"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-mono text-slate-400 mb-2 text-center">DETECTION RESULT</p>
+          <div class="relative aspect-video rounded-xl overflow-hidden border border-accent/40 bg-bg-2/60" id="demoResult">
+            <svg viewBox="0 0 400 225" class="w-full h-full">
+              <rect width="400" height="225" fill="#111827"/>
+              <rect x="0" y="160" width="400" height="65" fill="#1f2937"/>
+              <rect x="120" y="120" width="70" height="45" rx="6" fill="#334155"/>
+              <circle cx="260" cy="130" r="10" fill="#475569"/>
+              <rect x="250" y="140" width="20" height="35" rx="6" fill="#475569"/>
+              <ellipse cx="60" cy="165" rx="18" ry="9" fill="#374151"/>
+            </svg>
+            <div class="bbox" style="left:118px; top:115px; width:76px; height:56px; border-color:#3B82F6;"><div class="bbox-label" style="background:#3B82F6;color:#fff;">Car 94%</div></div>
+            <div class="bbox" style="left:246px; top:118px; width:30px; height:60px; border-color:#8B5CF6;"><div class="bbox-label" style="background:#8B5CF6;color:#fff;">Person 98%</div></div>
+            <div class="bbox" style="left:38px; top:152px; width:44px; height:26px; border-color:#06B6D4;"><div class="bbox-label" style="background:#06B6D4;color:#0f172a;">Dog 99%</div></div>
+          </div>
+        </div>
+      </div>
+      <p class="text-center text-xs text-slate-500 mt-6"><i class="fa-solid fa-circle-info mr-1"></i>This is a styled preview interface for learning purposes — no image is actually processed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 12: APPLICATIONS ============ -->
+<section class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">WHERE IT'S USED</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Applications of YOLO</h2>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-14">
+      <!-- injected -->
+      <div id="appsGrid" class="contents"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 13 & 14: ADVANTAGES / LIMITATIONS ============ -->
+<section class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 grid lg:grid-cols-2 gap-10">
+    <div data-aos="fade-right">
+      <h3 class="font-display font-semibold text-2xl text-success mb-6"><i class="fa-solid fa-circle-check mr-2"></i>Advantages</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-gauge-high text-success mb-2"></i><p class="text-sm">Fast</p></div>
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-video text-success mb-2"></i><p class="text-sm">Real-time</p></div>
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-bullseye text-success mb-2"></i><p class="text-sm">High Accuracy</p></div>
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-cubes text-success mb-2"></i><p class="text-sm">Easy Deployment</p></div>
+        <div class="glass rounded-xl p-4 text-center col-span-2"><i class="fa-solid fa-microchip text-success mb-2"></i><p class="text-sm">GPU Support</p></div>
+      </div>
+    </div>
+    <div data-aos="fade-left">
+      <h3 class="font-display font-semibold text-2xl text-danger mb-6"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Limitations</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-magnifying-glass text-danger mb-2"></i><p class="text-sm">Small Object Detection</p></div>
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-layer-group text-danger mb-2"></i><p class="text-sm">Occlusion</p></div>
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-cloud-moon text-danger mb-2"></i><p class="text-sm">Lighting Conditions</p></div>
+        <div class="glass rounded-xl p-4 text-center"><i class="fa-solid fa-border-all text-danger mb-2"></i><p class="text-sm">Complex Backgrounds</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 15: QUIZ ============ -->
+<section id="quiz" class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-4xl mx-auto px-5 md:px-8">
+    <div class="text-center" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">TEST YOURSELF</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Interactive Quiz</h2>
+      <p class="text-slate-400 mt-4">10 questions covering AI, ML, CNNs, and YOLO.</p>
+    </div>
+
+    <div class="glass glass-card p-6 md:p-8 mt-10" data-aos="zoom-in">
+      <div id="quizProgress" class="flex justify-between items-center text-xs font-mono text-slate-400 mb-4">
+        <span id="qIndex">Question 1 / 10</span>
+        <span id="qScore">Score: 0</span>
+      </div>
+      <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-8">
+        <div id="qProgressBar" class="h-full bg-gradient-to-r from-primary to-accent" style="width:10%"></div>
+      </div>
+      <div id="quizBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SECTION 16: RESOURCES ============ -->
+<section id="resources" class="relative py-24 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 md:px-8">
+    <div class="text-center max-w-2xl mx-auto" data-aos="fade-up">
+      <span class="text-xs font-mono text-accent section-eyebrow">GO DEEPER</span>
+      <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Resources</h2>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-5 mt-14">
+      <a href="https://arxiv.org/abs/1506.02640" target="_blank" rel="noopener" class="glass glass-card frame-corners p-5 hover:-translate-y-1 transition" data-aos="fade-up">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-file-lines text-2xl text-primary"></i>
+        <h4 class="font-semibold text-sm mt-3">Research Papers</h4>
+        <p class="text-xs text-slate-400 mt-1">Original YOLO paper on arXiv</p>
+      </a>
+      <a href="https://docs.ultralytics.com/" target="_blank" rel="noopener" class="glass glass-card frame-corners p-5 hover:-translate-y-1 transition" data-aos="fade-up" data-aos-delay="80">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-book text-2xl text-secondary"></i>
+        <h4 class="font-semibold text-sm mt-3">Documentation</h4>
+        <p class="text-xs text-slate-400 mt-1">Ultralytics YOLO docs</p>
+      </a>
+      <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noopener" class="glass glass-card frame-corners p-5 hover:-translate-y-1 transition" data-aos="fade-up" data-aos-delay="160">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-brands fa-github text-2xl text-accent"></i>
+        <h4 class="font-semibold text-sm mt-3">GitHub</h4>
+        <p class="text-xs text-slate-400 mt-1">Official YOLO source code</p>
+      </a>
+      <a href="https://roboflow.com/" target="_blank" rel="noopener" class="glass glass-card frame-corners p-5 hover:-translate-y-1 transition" data-aos="fade-up" data-aos-delay="240">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-chalkboard-user text-2xl text-warning"></i>
+        <h4 class="font-semibold text-sm mt-3">Tutorials</h4>
+        <p class="text-xs text-slate-400 mt-1">Hands-on Roboflow guides</p>
+      </a>
+      <a href="https://cocodataset.org/" target="_blank" rel="noopener" class="glass glass-card frame-corners p-5 hover:-translate-y-1 transition" data-aos="fade-up" data-aos-delay="320">
+        <span class="fc-tr"></span><span class="fc-br"></span>
+        <i class="fa-solid fa-database text-2xl text-success"></i>
+        <h4 class="font-semibold text-sm mt-3">Datasets</h4>
+        <p class="text-xs text-slate-400 mt-1">COCO — the standard benchmark</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section id="about" class="relative py-24 border-t border-white/5 bg-white/[0.02]">
+  <div class="max-w-4xl mx-auto px-5 md:px-8 text-center" data-aos="fade-up">
+    <span class="text-xs font-mono text-accent section-eyebrow">ABOUT THE ACADEMY</span>
+    <h2 class="font-display font-bold text-3xl md:text-4xl mt-3">Built for Curious Minds</h2>
+    <p class="text-slate-400 mt-4 max-w-2xl mx-auto">AI Vision Academy is a self-contained learning platform that walks beginners from the basics of artificial intelligence all the way to understanding how YOLO detects objects in real time — through explanations, diagrams, and hands-on interactions.</p>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="relative border-t border-white/5 py-14">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 grid md:grid-cols-4 gap-10">
+    <div>
+      <div class="flex items-center gap-2 font-display font-bold text-lg">
+        <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary grid place-items-center">
+          <i class="fa-solid fa-eye text-white text-sm"></i>
+        </span>
+        AI Vision Academy
+      </div>
+      <p class="text-sm text-slate-400 mt-4">Learn how AI sees the world, one bounding box at a time.</p>
+    </div>
+    <div>
+      <h5 class="font-semibold text-sm mb-4">Explore</h5>
+      <ul class="space-y-2 text-sm text-slate-400">
+        <li><a href="#about" class="hover:text-accent">About</a></li>
+        <li><a href="#resources" class="hover:text-accent">Resources</a></li>
+        <li><a href="#quiz" class="hover:text-accent">Quiz</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 class="font-semibold text-sm mb-4">Contact</h5>
+      <ul class="space-y-2 text-sm text-slate-400">
+        <li><i class="fa-solid fa-envelope mr-2"></i>hello@aivisionacademy.example</li>
+      </ul>
+    </div>
+    <div>
+      <h5 class="font-semibold text-sm mb-4">Follow</h5>
+      <div class="flex gap-3">
+        <a href="#" class="w-9 h-9 rounded-lg glass grid place-items-center hover:text-accent"><i class="fa-brands fa-github"></i></a>
+        <a href="#" class="w-9 h-9 rounded-lg glass grid place-items-center hover:text-accent"><i class="fa-brands fa-linkedin"></i></a>
+        <a href="#" class="w-9 h-9 rounded-lg glass grid place-items-center hover:text-accent"><i class="fa-brands fa-x-twitter"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-5 md:px-8 mt-10 pt-6 border-t border-white/5 text-xs text-slate-500 text-center">
+    © 2026 AI Vision Academy. Built for educational purposes.
+  </div>
+</footer>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.1/aos.js"></script>
+<script>
+AOS.init({ duration: 700, once: true, easing: 'ease-out-cubic' });
+
+/* ---------- Mobile Menu ---------- */
+const menuBtn = document.getElementById('menuBtn');
+const mobileMenu = document.getElementById('mobileMenu');
+menuBtn.addEventListener('click', () => {
+  const open = mobileMenu.style.maxHeight && mobileMenu.style.maxHeight !== '0px';
+  mobileMenu.style.maxHeight = open ? '0px' : mobileMenu.scrollHeight + 'px';
+  menuBtn.innerHTML = open ? '<i class="fa-solid fa-bars"></i>' : '<i class="fa-solid fa-xmark"></i>';
+});
+mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  mobileMenu.style.maxHeight = '0px';
+  menuBtn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+}));
+
+/* ---------- Active nav link on scroll ---------- */
+const navLinks = document.querySelectorAll('.nav-link');
+const sections = [...navLinks].map(l => document.querySelector(l.getAttribute('href'))).filter(Boolean);
+window.addEventListener('scroll', () => {
+  let current = sections[0];
+  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) current = s; });
+  navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + current.id));
+});
+
+/* ---------- Typing effect ---------- */
+const typingText = "Learn AI Object Detection with YOLO";
+const typingTarget = document.getElementById('typingTarget');
+let ti = 0;
+function typeLoop(){
+  if(ti <= typingText.length){
+    typingTarget.textContent = typingText.slice(0, ti);
+    ti++;
+    setTimeout(typeLoop, 45);
+  } else {
+    typingTarget.classList.remove('typing-cursor');
+    setTimeout(()=>typingTarget.classList.add('typing-cursor'), 400);
+  }
+}
+typeLoop();
+
+/* ---------- Number counters ---------- */
+const counters = document.querySelectorAll('.counter');
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      const el = entry.target;
+      const target = parseFloat(el.dataset.target);
+      let cur = 0;
+      const step = target / 60;
+      const isDecimal = target % 1 !== 0;
+      const tick = () => {
+        cur += step;
+        if(cur >= target){ el.textContent = isDecimal ? target.toFixed(1) : target; return; }
+        el.textContent = isDecimal ? cur.toFixed(1) : Math.floor(cur);
+        requestAnimationFrame(tick);
+      };
+      tick();
+      counterObserver.unobserve(el);
+    }
+  });
+}, {threshold:0.5});
+counters.forEach(c => counterObserver.observe(c));
+
+/* ---------- Hero bounding box draw-in ---------- */
+const heroObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      ['boxCar','boxPerson','boxDog'].forEach((id,i)=>{
+        const el = document.getElementById(id);
+        setTimeout(()=>{ el.style.transition='stroke-dashoffset 1s ease'; el.style.strokeDashoffset='0'; }, i*300);
+      });
+    }
+  });
+}, {threshold:0.4});
+heroObserver.observe(document.getElementById('home'));
+
+/* ---------- Neural net background canvas ---------- */
+const netCanvas = document.getElementById('netCanvas');
+const nctx = netCanvas.getContext('2d');
+let nw, nh, nodes;
+function resizeNet(){
+  nw = netCanvas.width = window.innerWidth;
+  nh = netCanvas.height = window.innerHeight;
+  const count = Math.floor((nw*nh)/22000);
+  nodes = Array.from({length: count}, () => ({
+    x: Math.random()*nw, y: Math.random()*nh,
+    vx: (Math.random()-0.5)*0.25, vy: (Math.random()-0.5)*0.25
+  }));
+}
+function drawNet(){
+  nctx.clearRect(0,0,nw,nh);
+  nodes.forEach(n=>{
+    n.x += n.vx; n.y += n.vy;
+    if(n.x<0||n.x>nw) n.vx*=-1;
+    if(n.y<0||n.y>nh) n.vy*=-1;
+  });
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx = nodes[i].x-nodes[j].x, dy = nodes[i].y-nodes[j].y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if(dist < 140){
+        nctx.strokeStyle = `rgba(59,130,246,${0.12*(1-dist/140)})`;
+        nctx.lineWidth = 1;
+        nctx.beginPath(); nctx.moveTo(nodes[i].x,nodes[i].y); nctx.lineTo(nodes[j].x,nodes[j].y); nctx.stroke();
+      }
+    }
+  }
+  nctx.fillStyle = 'rgba(139,92,246,0.5)';
+  nodes.forEach(n=>{ nctx.beginPath(); nctx.arc(n.x,n.y,1.6,0,Math.PI*2); nctx.fill(); });
+  requestAnimationFrame(drawNet);
+}
+resizeNet(); drawNet();
+window.addEventListener('resize', resizeNet);
+
+/* ---------- Interactive neural network diagram (Deep Learning section) ---------- */
+const nnCanvas = document.getElementById('nnCanvas');
+const nnctx = nnCanvas.getContext('2d');
+function sizeNN(){ nnCanvas.width = nnCanvas.clientWidth; nnCanvas.height = 360; }
+sizeNN(); window.addEventListener('resize', sizeNN);
+const layers = [4,6,6,3];
+let pulse = 0;
+function layerPositions(){
+  const w = nnCanvas.width, h = nnCanvas.height;
+  return layers.map((count, li) => {
+    const x = (w/(layers.length+1))*(li+1);
+    return Array.from({length: count}, (_,i) => ({
+      x, y: (h/(count+1))*(i+1)
+    }));
+  });
+}
+function drawNN(){
+  const w = nnCanvas.width, h = nnCanvas.height;
+  nnctx.clearRect(0,0,w,h);
+  const pos = layerPositions();
+  for(let l=0;l<pos.length-1;l++){
+    pos[l].forEach((a,ai)=>{
+      pos[l+1].forEach((b,bi)=>{
+        const active = ((pulse + ai + bi) % 14) < 2;
+        nnctx.strokeStyle = active ? 'rgba(6,182,212,0.85)' : 'rgba(148,163,184,0.12)';
+        nnctx.lineWidth = active ? 1.6 : 1;
+        nnctx.beginPath(); nnctx.moveTo(a.x,a.y); nnctx.lineTo(b.x,b.y); nnctx.stroke();
+      });
+    });
+  }
+  pos.forEach((layer, li)=>{
+    layer.forEach(n=>{
+      const grad = nnctx.createRadialGradient(n.x,n.y,0,n.x,n.y,10);
+      const colors = ['#3B82F6','#8B5CF6','#8B5CF6','#06B6D4'];
+      grad.addColorStop(0, colors[li]);
+      grad.addColorStop(1, 'rgba(15,23,42,0)');
+      nnctx.fillStyle = grad;
+      nnctx.beginPath(); nnctx.arc(n.x,n.y,9,0,Math.PI*2); nnctx.fill();
+      nnctx.fillStyle = colors[li];
+      nnctx.beginPath(); nnctx.arc(n.x,n.y,4,0,Math.PI*2); nnctx.fill();
+    });
+  });
+  pulse++;
+  requestAnimationFrame(drawNN);
+}
+drawNN();
+
+/* ---------- YOLO Architecture pulse ---------- */
+const archEls = document.querySelectorAll('.arch-pulse');
+let archIndex = 0;
+setInterval(()=>{
+  archEls.forEach(el => el.style.opacity = 0);
+  archEls[archIndex % archEls.length].style.opacity = 1;
+  archIndex++;
+}, 900);
+
+/* ---------- Pipeline (Section 5) ---------- */
+const pipelineSteps = [
+  {label:'Input Image', icon:'fa-image', color:'#3B82F6'},
+  {label:'Resize', icon:'fa-expand', color:'#3B82F6'},
+  {label:'CNN Backbone', icon:'fa-microchip', color:'#8B5CF6'},
+  {label:'Feature Extraction', icon:'fa-layer-group', color:'#8B5CF6'},
+  {label:'Prediction Head', icon:'fa-crosshairs', color:'#06B6D4'},
+  {label:'Bounding Boxes', icon:'fa-vector-square', color:'#06B6D4'},
+  {label:'Confidence Scores', icon:'fa-gauge-high', color:'#F59E0B'},
+  {label:'NMS', icon:'fa-filter', color:'#F59E0B'},
+  {label:'Final Detection', icon:'fa-circle-check', color:'#10B981'},
+];
+const pipelineEl = document.getElementById('pipeline');
+pipelineSteps.forEach((s, i) => {
+  const node = document.createElement('div');
+  node.className = 'flow-node';
+  node.setAttribute('data-aos','fade-up');
+  node.setAttribute('data-aos-delay', (i%3)*80);
+  node.innerHTML = `
+    <div class="glass glass-card frame-corners flex items-center gap-3 px-6 py-3 w-72">
+      <span class="fc-tr"></span><span class="fc-br"></span>
+      <div class="w-9 h-9 rounded-lg grid place-items-center" style="background:${s.color}22; color:${s.color};">
+        <i class="fa-solid ${s.icon}"></i>
+      </div>
+      <span class="text-sm font-medium">${s.label}</span>
+    </div>`;
+  pipelineEl.appendChild(node);
+  if(i < pipelineSteps.length - 1){
+    const connector = document.createElement('div');
+    connector.className = 'flow-connector h-8';
+    pipelineEl.appendChild(connector);
+  }
+});
+
+/* ---------- How YOLO Detects steps (Section 7) ---------- */
+const detectSteps = [
+  "Input Image — a photo or video frame enters the network.",
+  "Resize Image — the frame is scaled to the model's fixed input size.",
+  "CNN extracts features — convolutional layers build a feature map.",
+  "Predict boxes — each grid cell proposes candidate bounding boxes.",
+  "Predict confidence — every box gets an objectness score.",
+  "Predict classes — class probabilities are assigned per box.",
+  "Apply NMS — overlapping duplicate boxes are suppressed.",
+  "Display final objects — the cleaned-up detections are drawn on the image."
+];
+const stepsList = document.getElementById('stepsList');
+detectSteps.forEach((text, i) => {
+  const div = document.createElement('div');
+  div.className = 'glass glass-card frame-corners p-5 flex gap-4 items-start';
+  div.setAttribute('data-aos','fade-up');
+  div.setAttribute('data-aos-delay', (i%4)*80);
+  div.innerHTML = `
+    <span class="fc-tr"></span><span class="fc-br"></span>
+    <div class="w-9 h-9 shrink-0 rounded-lg bg-gradient-to-br from-primary to-accent grid place-items-center font-mono text-xs font-bold text-white">${i+1}</div>
+    <p class="text-sm text-slate-300">${text}</p>`;
+  stepsList.appendChild(div);
+});
+
+/* ---------- Bounding Box interactive (Section 8) ---------- */
+const bboxRect = document.getElementById('bboxRect');
+const bboxHandle = document.getElementById('bboxHandle');
+const bboxStage = document.getElementById('bboxStage');
+let dragging = false;
+bboxHandle.addEventListener('mousedown', e => { dragging = true; e.preventDefault(); });
+bboxHandle.addEventListener('touchstart', e => { dragging = true; }, {passive:true});
+function updateBBox(clientX, clientY){
+  const stageRect = bboxStage.getBoundingClientRect();
+  const rectLeft = bboxRect.offsetLeft, rectTop = bboxRect.offsetTop;
+  let w = Math.max(30, Math.min(clientX - stageRect.left - rectLeft, stageRect.width - rectLeft));
+  let h = Math.max(30, Math.min(clientY - stageRect.top - rectTop, stageRect.height - rectTop));
+  bboxRect.style.width = w + 'px';
+  bboxRect.style.height = h + 'px';
+  document.getElementById('valX').textContent = Math.round(rectLeft + w/2);
+  document.getElementById('valY').textContent = Math.round(rectTop + h/2);
+  document.getElementById('valW').textContent = Math.round(w);
+  document.getElementById('valH').textContent = Math.round(h);
+}
+window.addEventListener('mousemove', e => { if(dragging) updateBBox(e.clientX, e.clientY); });
+window.addEventListener('touchmove', e => { if(dragging && e.touches[0]) updateBBox(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
+window.addEventListener('mouseup', () => dragging = false);
+window.addEventListener('touchend', () => dragging = false);
+
+/* ---------- Confidence Threshold slider (Section 9) ---------- */
+const threshSlider = document.getElementById('threshSlider');
+const threshVal = document.getElementById('threshVal');
+const confBoxes = document.querySelectorAll('.conf-box');
+function applyThreshold(){
+  const t = parseFloat(threshSlider.value);
+  threshVal.textContent = t.toFixed(2);
+  confBoxes.forEach(b => {
+    const c = parseFloat(b.dataset.conf);
+    b.style.opacity = c >= t ? '1' : '0.08';
+  });
+}
+threshSlider.addEventListener('input', applyThreshold);
+applyThreshold();
+
+/* ---------- YOLO Versions (Section 10) ---------- */
+const versions = [
+  {name:'YOLOv1', year:'2016', feat:'Single-shot grid regression, foundational one-stage design', speed:45, acc:63.4},
+  {name:'YOLOv2', year:'2017', feat:'Anchor boxes, batch norm, higher resolution training', speed:67, acc:76.8},
+  {name:'YOLOv3', year:'2018', feat:'Multi-scale predictions, Darknet-53 backbone', speed:65, acc:80.2},
+  {name:'YOLOv4', year:'2020', feat:'CSPDarknet backbone, Mosaic augmentation, PANet neck', speed:65, acc:88.3},
+  {name:'YOLOv5', year:'2020', feat:'PyTorch-native, fast to train, wide community adoption', speed:140, acc:88.9},
+  {name:'YOLOv6', year:'2022', feat:'Hardware-aware design tuned for industrial deployment', speed:150, acc:89.5},
+  {name:'YOLOv7', year:'2022', feat:'Trainable bag-of-freebies, improved efficiency', speed:161, acc:90.1},
+  {name:'YOLOv8', year:'2023', feat:'Anchor-free head, unified detect/segment/pose framework', speed:170, acc:90.8},
+  {name:'YOLOv9', year:'2024', feat:'Programmable Gradient Information for less data loss', speed:172, acc:91.3},
+  {name:'YOLOv10', year:'2024', feat:'NMS-free end-to-end inference for lower latency', speed:180, acc:91.6},
+  {name:'YOLO11', year:'2024', feat:'Refined backbone/neck, better accuracy-to-size ratio', speed:185, acc:92.1},
+];
+const versionGrid = document.getElementById('versionGrid');
+versions.forEach((v,i) => {
+  const card = document.createElement('div');
+  card.className = 'glass glass-card frame-corners p-5';
+  card.setAttribute('data-aos','fade-up');
+  card.setAttribute('data-aos-delay', (i%3)*80);
+  card.innerHTML = `
+    <span class="fc-tr"></span><span class="fc-br"></span>
+    <div class="flex items-center justify-between">
+      <h4 class="font-display font-bold text-lg">${v.name}</h4>
+      <span class="text-xs font-mono text-accent pill glass px-2 py-0.5">${v.year}</span>
+    </div>
+    <p class="text-sm text-slate-400 mt-2">${v.feat}</p>
+    <div class="flex gap-4 mt-4 text-xs font-mono">
+      <div><i class="fa-solid fa-gauge-high text-primary mr-1"></i>${v.speed} FPS</div>
+      <div><i class="fa-solid fa-bullseye text-secondary mr-1"></i>${v.acc}% mAP</div>
+    </div>`;
+  versionGrid.appendChild(card);
+});
+
+new Chart(document.getElementById('versionChart'), {
+  type: 'line',
+  data: {
+    labels: versions.map(v=>v.name),
+    datasets: [
+      { label:'Speed (FPS)', data: versions.map(v=>v.speed), borderColor:'#3B82F6', backgroundColor:'rgba(59,130,246,0.15)', tension:0.35, fill:true, yAxisID:'y' },
+      { label:'Accuracy (mAP %)', data: versions.map(v=>v.acc), borderColor:'#8B5CF6', backgroundColor:'rgba(139,92,246,0.15)', tension:0.35, fill:true, yAxisID:'y1' },
+    ]
+  },
+  options: {
+    responsive:true,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{ labels:{ color:'#cbd5e1' } } },
+    scales:{
+      x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(148,163,184,0.08)' } },
+      y:{ position:'left', ticks:{ color:'#3B82F6' }, grid:{ color:'rgba(148,163,184,0.08)' }, title:{ display:true, text:'FPS', color:'#3B82F6' } },
+      y1:{ position:'right', ticks:{ color:'#8B5CF6' }, grid:{ display:false }, title:{ display:true, text:'mAP %', color:'#8B5CF6' } },
+    }
+  }
+});
+
+/* ---------- Demo buttons (styled only) ---------- */
+document.getElementById('btnUpload').addEventListener('click', () => {
+  document.getElementById('demoResult').classList.add('ring-2','ring-accent');
+  setTimeout(()=>document.getElementById('demoResult').classList.remove('ring-2','ring-accent'), 900);
+});
+document.getElementById('btnCamera').addEventListener('click', () => {
+  document.getElementById('demoResult').classList.add('ring-2','ring-secondary');
+  setTimeout(()=>document.getElementById('demoResult').classList.remove('ring-2','ring-secondary'), 900);
+});
+
+/* ---------- Applications (Section 12) ---------- */
+const apps = [
+  {icon:'🚗', title:'Self-driving Cars', desc:'Detecting pedestrians, vehicles and signs in real time.'},
+  {icon:'🏥', title:'Medical Imaging', desc:'Flagging anomalies in scans to assist diagnosis.'},
+  {icon:'🏭', title:'Manufacturing', desc:'Spotting defects on fast-moving production lines.'},
+  {icon:'🛒', title:'Retail', desc:'Tracking shelf stock and customer movement.'},
+  {icon:'🚓', title:'Security', desc:'Monitoring footage for unusual activity.'},
+  {icon:'🚁', title:'Drone Detection', desc:'Identifying objects from aerial viewpoints.'},
+  {icon:'🌾', title:'Agriculture', desc:'Counting crops and spotting pests early.'},
+  {icon:'🏟', title:'Sports Analytics', desc:'Tracking players and the ball for live stats.'},
+];
+const appsGrid = document.getElementById('appsGrid');
+apps.forEach((a,i)=>{
+  const card = document.createElement('div');
+  card.className = 'glass glass-card frame-corners p-5 text-center';
+  card.setAttribute('data-aos','zoom-in');
+  card.setAttribute('data-aos-delay', (i%4)*80);
+  card.innerHTML = `<span class="fc-tr"></span><span class="fc-br"></span>
+    <div class="text-3xl mb-3">${a.icon}</div>
+    <h4 class="font-semibold text-sm">${a.title}</h4>
+    <p class="text-xs text-slate-400 mt-1">${a.desc}</p>`;
+  appsGrid.appendChild(card);
+});
+
+/* ---------- Quiz (Section 15) ---------- */
+const quizData = [
+  {q:"What does AI stand for?", options:["Artificial Intelligence","Automated Interface","Applied Informatics","Analog Input"], a:0},
+  {q:"Which learning type uses labeled data?", options:["Unsupervised Learning","Reinforcement Learning","Supervised Learning","Clustering"], a:2},
+  {q:"What does CNN stand for?", options:["Central Neural Node","Convolutional Neural Network","Coded Number Notation","Combined Node Network"], a:1},
+  {q:"What does YOLO stand for?", options:["You Only Look Once","Your Object Locator Online","You Observe, Learn, Optimize","Yield Object Location Output"], a:0},
+  {q:"A bounding box is defined by which values?", options:["Red, Green, Blue, Alpha","x, y, width, height","Rows and Columns only","Top and Bottom margins"], a:1},
+  {q:"What does the confidence score represent?", options:["Image file size","How certain the model is an object exists there","The number of classes","The learning rate"], a:1},
+  {q:"What does NMS remove?", options:["Blurry images","Low-resolution pixels","Duplicate overlapping boxes","Unused color channels"], a:2},
+  {q:"Is YOLO a one-stage or two-stage detector?", options:["Two-stage","Three-stage","One-stage","Zero-stage"], a:2},
+  {q:"Which YOLO part extracts raw image features?", options:["Head","Neck","Backbone","Loss function"], a:2},
+  {q:"Which CV task assigns a label to every pixel?", options:["Image Classification","Object Detection","OCR","Image Segmentation"], a:3},
+];
+let qCurrent = 0, qScore = 0, qAnswered = false;
+const quizBody = document.getElementById('quizBody');
+const qIndexEl = document.getElementById('qIndex');
+const qScoreEl = document.getElementById('qScore');
+const qProgressBar = document.getElementById('qProgressBar');
+
+function renderQuiz(){
+  if(qCurrent >= quizData.length){
+    quizBody.innerHTML = `
+      <div class="text-center py-6">
+        <i class="fa-solid fa-trophy text-4xl text-warning mb-4"></i>
+        <h3 class="font-display font-bold text-2xl">Your Score: ${qScore} / ${quizData.length}</h3>
+        <p class="text-slate-400 mt-2">${qScore >= 8 ? "Excellent! You know your YOLO." : qScore >= 5 ? "Nice work — review a few sections and try again." : "Keep learning — revisit the sections above!"}</p>
+        <button id="quizRestart" class="btn-primary text-white font-semibold px-6 py-3 rounded-xl mt-6">Restart Quiz</button>
+      </div>`;
+    document.getElementById('quizRestart').addEventListener('click', ()=>{ qCurrent=0; qScore=0; renderQuiz(); });
+    qIndexEl.textContent = 'Complete';
+    qProgressBar.style.width = '100%';
+    return;
+  }
+  qAnswered = false;
+  const item = quizData[qCurrent];
+  qIndexEl.textContent = `Question ${qCurrent+1} / ${quizData.length}`;
+  qScoreEl.textContent = `Score: ${qScore}`;
+  qProgressBar.style.width = `${((qCurrent)/quizData.length)*100}%`;
+  quizBody.innerHTML = `
+    <h3 class="font-display font-semibold text-lg mb-5">${item.q}</h3>
+    <div class="grid sm:grid-cols-2 gap-3" id="optionsWrap">
+      ${item.options.map((o,i)=>`<div class="quiz-option glass rounded-xl p-4 text-sm border border-white/10" data-i="${i}">${o}</div>`).join('')}
+    </div>
+    <div class="flex justify-end mt-6">
+      <button id="nextQBtn" class="btn-outline glass font-semibold px-5 py-2.5 rounded-xl opacity-40 pointer-events-none">Next <i class="fa-solid fa-arrow-right ml-1"></i></button>
+    </div>`;
+  document.querySelectorAll('.quiz-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      if(qAnswered) return;
+      qAnswered = true;
+      const chosen = parseInt(opt.dataset.i);
+      document.querySelectorAll('.quiz-option').forEach(o=>{
+        const oi = parseInt(o.dataset.i);
+        if(oi === item.a) o.classList.add('correct');
+        else if(oi === chosen) o.classList.add('wrong');
+      });
+      if(chosen === item.a) qScore++;
+      qScoreEl.textContent = `Score: ${qScore}`;
+      const nextBtn = document.getElementById('nextQBtn');
+      nextBtn.classList.remove('opacity-40','pointer-events-none');
+    });
+  });
+  document.getElementById('nextQBtn').addEventListener('click', ()=>{ qCurrent++; renderQuiz(); });
+}
+renderQuiz();
+</script>
+</body>
+</html>

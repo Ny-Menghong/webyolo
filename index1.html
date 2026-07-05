@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lesson</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f5f5f5;
+}
+.container{
+    width:900px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    margin-top:30px;
+}
+
+pre{
+    background:#1e293b;
+    color:white;
+    padding:15px;
+    border-radius:8px;
+    overflow:auto;
+}
+
+.note{
+    background:#dbeafe;
+    padding:15px;
+    border-left:5px solid blue;
+    margin:20px 0;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div id="lesson"></div>
+
+</div>
+
+<script>
+
+fetch("lesson.json")
+.then(res=>res.json())
+.then(data=>{
+
+const lesson=document.getElementById("lesson");
+
+data.blocks.forEach(block=>{
+
+switch(block.type){
+
+case "heading":
+
+lesson.innerHTML+=`<h${block.level}>${block.text}</h${block.level}>`;
+
+break;
+
+case "paragraph":
+
+lesson.innerHTML+=`<p>${block.text}</p>`;
+
+break;
+
+case "list":
+
+let list=`<${block.style}>`;
+
+block.items.forEach(item=>{
+
+list+=`<li>${item}</li>`;
+
+});
+
+list+=`</${block.style}>`;
+
+lesson.innerHTML+=list;
+
+break;
+
+case "code":
+
+lesson.innerHTML+=`
+<pre><code>${block.content}</code></pre>
+`;
+
+break;
+
+case "note":
+
+lesson.innerHTML+=`
+<div class="note">
+${block.text}
+</div>
+`;
+
+break;
+
+}
+
+});
+
+});
+
+</script>
+
+</body>
+</html>
